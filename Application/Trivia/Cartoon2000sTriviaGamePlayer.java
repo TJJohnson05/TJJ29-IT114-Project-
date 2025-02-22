@@ -1,7 +1,9 @@
 
-
+package Application.Netgame.Common
 import java.io.IOException;
 import java.util.Scanner;
+
+
 
 /**
  * A command-line version of the MoviesTriviaGamePlayer class that connects to a
@@ -10,13 +12,12 @@ import java.util.Scanner;
 public class Cartoon2000sTriviaGamePlayer {
 
     private static final int PORT = 37829; // Port number for the server.
-
     private static volatile boolean connected = false; // Tracks connection status.
-    private static MoviesTriviaGameClient moviesTriviaGameClient;
+    private static Cartoon2000sTriviaGameClient client;
 
     public static void main(String[] args) {
-        String host = "";
         Scanner scanner = new Scanner(System.in);
+        String host = "";
         if (args.length == 0) {
             System.out.print("Enter the host name of the computer hosting the trivia game: ");
             host = scanner.nextLine().trim();
@@ -33,7 +34,7 @@ public class Cartoon2000sTriviaGamePlayer {
         // Try to establish a connection to the server.
         try {
             System.out.println("Connecting to " + host + "...");
-            moviesTriviaGameClient = new MoviesTriviaGameClient(host);
+            client = new Cartoon2000sTriviaGameClient(host);
             connected = true;
             System.out.println("Connected to the server. Type your messages below. Type 'quit' to exit.");
         } catch (IOException e) {
@@ -52,7 +53,7 @@ public class Cartoon2000sTriviaGamePlayer {
             }
 
             if (!message.isEmpty()) {
-                moviesTriviaGameClient.send(message);
+                client.send(message);
             }
         }
 
@@ -64,7 +65,7 @@ public class Cartoon2000sTriviaGamePlayer {
      */
     private static void doQuit() {
         if (connected) {
-            moviesTriviaGameClient.disconnect();
+            client.disconnect();
             try {
                 Thread.sleep(1000); // Time for DisconnectMessage to actually be sent.
             } catch (InterruptedException e) {
@@ -81,7 +82,7 @@ public class Cartoon2000sTriviaGamePlayer {
                 /**
                  * Inner class representing the trivia game client.
                  */
-                private static class MoviesTriviaGameClient extends Client {
+                private static class Cartoon2000sTriviaGameClient extends Client {
             
                     /**
                      * Constructor to create a client connection to the specified host.
@@ -89,7 +90,7 @@ public class Cartoon2000sTriviaGamePlayer {
                      * @param host The server's host name or IP address.
                      * @throws IOException If the connection cannot be established.
                      */
-                    MoviesTriviaGameClient(String host) throws IOException {
+                    Cartoon2000sTriviaGameClient(String host) throws IOException {
                         super(host, PORT);
                     }
             
@@ -101,11 +102,14 @@ public class Cartoon2000sTriviaGamePlayer {
                     @Override
                     protected void messageReceived(Object message) {
                         if (message instanceof Cartoon2000sTriviaGamePlayer) {
-                            Cartoon2000sTriviaGamePlayer state = (Cartoon2000sTriviaGamePlayer) message;
+                            Cartoon2000sTriviaGameState state = (Cartoon2000sTriviaGameState) message;
                             if (state.senderID != 0) {
                             System.out.println("Player  " + state.senderID + " " + state.message);
-                }
-            }
+                            }
+                        
+                        }else if (message instanceof String) {
+                            System.out.println(message);
+                        }
         }
 
         /**
@@ -117,6 +121,7 @@ public class Cartoon2000sTriviaGamePlayer {
         protected void connectionClosedByError(String message) {
             System.out.println("Connection closed due to error: " + message);
             connected = false;
+            System.exit(0);// Should end if server is shut down
         }
 
         /**
