@@ -3,7 +3,6 @@
 import java.io.IOException;
 import java.util.Scanner;
 
-
 /**
  * A command-line version of the MoviesTriviaGamePlayer class that connects to a
  * trivia game server and communicates using standard input/output.
