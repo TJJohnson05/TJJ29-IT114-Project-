@@ -1,3 +1,9 @@
+// Tyler Johnson 
+// Feburary 22nd 2025
+// Tjj29@njit.edu 
+// IT114 - 004
+// Phase 1 Assignment: Server and Multi-Clients
+
 import java.io.IOException;
 import java.util.Scanner;
 import java.io.ObjectInputStream;
