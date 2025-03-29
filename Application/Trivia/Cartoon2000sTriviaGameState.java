@@ -1,9 +1,8 @@
 // Tyler Johnson 
-// February 22nd, 2025
+// March 7th 2025
 // Tjj29@njit.edu 
 // IT114 - 004
-// Phase 1 Assignment: Server and Multi-Clients
-
+// Phase 2 Assignment: Trivia Game Flow
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,7 +13,7 @@ public class Cartoon2000sTriviaGameState implements Serializable {
     private static final long serialVersionUID = 1L;
     public String message; // Message sent by a client
     public int senderID; // ID of the player sending the message
-    private HashMap<Integer, Integer> playerScores;
+    HashMap<Integer, Integer> playerScores;
 
     public Cartoon2000sTriviaGameState() {
         playerScores = new HashMap<>();

@@ -1,33 +1,30 @@
-// Tyler Johnson 
-// February 22nd, 2025
-// Tjj29@njit.edu 
-// IT114 - 004
-// Phase 1 Assignment: Server and Multi-Clients
-
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-
 
 
 public class Cartoon2000sTriviaGameServer extends Hub {
 
-    private static final int PORT = 37829;
+    private final static int PORT = 37829;
+
     private Cartoon2000sTriviaGameState state;
-    private HashSet<Integer> playerIDs;
     private Cartoon2000sTriviaGameQuestionList questions;
     private int currentQuestionIndex = -1;
     private Map<Integer, String> answersReceived;
 
-    public Cartoon2000sTriviaGameServer(int port) throws IOException {
+    public Cartoon2000sTriviaGameServer() throws IOException {
         super(PORT);
         setAutoreset(true);
         state = new Cartoon2000sTriviaGameState();
-        playerIDs = new HashSet<>();
+        initializeNewGame();
+    }
+
+    private void initializeNewGame() {
+        state.clearScores();
+        sendToAll(state);
         questions = new Cartoon2000sTriviaGameQuestionList();
+        currentQuestionIndex = -1;
         answersReceived = new HashMap<>();
-        System.out.println("Server started on port " + PORT);
     }
 
     @Override
@@ -36,7 +33,7 @@ public class Cartoon2000sTriviaGameServer extends Hub {
             String command = ((String) message).trim();
 
             if (command.equalsIgnoreCase("restart")) {
-                if (playerIDs.size() >= 2) {
+                if (state.getPlayerCount() >= 2) {
                     sendToAll("A new game is starting!");
                     initializeNewGame();
                     startGame();
@@ -50,32 +47,31 @@ public class Cartoon2000sTriviaGameServer extends Hub {
     }
 
     @Override
-    protected void playerDisconnected(int playerID) {
-        System.out.printf("Player %d has left the game.\n", playerID);
-        sendToAll("Player " + playerID + " has left the game.");
-        playerIDs.remove(playerID);
-        answersReceived.remove(playerID);
-        sendToAll(state);
-    }
-    
-    @Override
     protected void playerConnected(int playerID) {
-        if (playerIDs.contains(playerID)) {
-            System.out.printf("Player %d has rejoined the game.\n", playerID);
-            sendToAll("Player " + playerID + " has rejoined.");
-        } else {
-            System.out.printf("Player %d has joined the game.\n", playerID);
-            sendToAll("Player " + playerID + " has joined.");
+        System.out.println("Player connected: " + playerID);
+        state.addPlayer(playerID);
+
+        if (state.getPlayerCount() == 1) {
+            sendToAll("Waiting for another player to join...");
+        } else if (state.getPlayerCount() == 2) {
+            sendToAll("Two players connected. Starting the game!");
+            sendToAll(state);
+            startGame();
         }
-    
-        playerIDs.add(playerID);
-        sendToAll(state);
     }
 
-    private void initializeNewGame() {
-        state.clearScores();
-        currentQuestionIndex = -1;
-        answersReceived.clear();
+    @Override
+    protected void playerDisconnected(int playerID) {
+        System.out.println("Player disconnected: " + playerID);
+        state.removePlayer(playerID);
+        sendToAll(state);
+        if (state.getPlayerCount() < 2) {
+            sendToAll("Player " + playerID + " disconnected. Waiting for another player to continue the game.");
+            initializeNewGame();
+        }
+        synchronized (answersReceived) {
+            answersReceived.remove(playerID);
+        }
     }
 
     private void startGame() {
@@ -88,10 +84,16 @@ public class Cartoon2000sTriviaGameServer extends Hub {
             synchronized (answersReceived) {
                 if (!answersReceived.containsKey(playerID)) {
                     answersReceived.put(playerID, answer);
+                    System.out.println("Player " + playerID + " answered: " + answer);
                     sendToAll("Player " + playerID + " answered: " + answer);
-                    if (answersReceived.size() == playerIDs.size()) {
+
+                    sendToOne(playerID, "Player " + playerID + " has answered. Waiting for all players to answer...");
+
+                    if (answersReceived.size() == state.getPlayerCount()) {
+                        System.out.println("All players have answered.");
                         sendToAll("All players have answered.");
                         evaluateAnswers();
+                        sendToAll(state);
                     }
                 }
             }
@@ -104,15 +106,18 @@ public class Cartoon2000sTriviaGameServer extends Hub {
             endGame();
             return;
         }
+
         Cartoon2000sTriviaGameQuestion currentQuestion = questions.get(currentQuestionIndex);
         sendToAll("Question: " + currentQuestion.question());
     }
 
     private void evaluateAnswers() {
         Cartoon2000sTriviaGameQuestion currentQuestion = questions.get(currentQuestionIndex);
+
         for (Map.Entry<Integer, String> entry : answersReceived.entrySet()) {
             int playerID = entry.getKey();
             String answer = entry.getValue();
+
             if (currentQuestion.isCorrectAnswer(answer)) {
                 state.incrementScore(playerID);
                 sendToAll("Player " + playerID + " answered correctly! The answer was: " + currentQuestion.answer());
@@ -120,7 +125,7 @@ public class Cartoon2000sTriviaGameServer extends Hub {
                 sendToAll("Player " + playerID + " answered incorrectly.");
             }
         }
-        answersReceived.clear();
+        answersReceived = new HashMap<>();
         nextQuestion();
     }
 
@@ -135,12 +140,11 @@ public class Cartoon2000sTriviaGameServer extends Hub {
                 sendToAll("Player " + winner + " wins the game!");
             }
         }
-        sendToAll("Type 'restart' to play again.");
     }
 
     public static void main(String[] args) {
         try {
-            new Cartoon2000sTriviaGameServer(PORT);
+            new Cartoon2000sTriviaGameServer();
         } catch (IOException e) {
             System.out.println("Error starting server: " + e.getMessage());
         }

@@ -1,4 +1,4 @@
-package Project.Trivia;
+
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -8,7 +8,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 import View.Cartoon2000sTriviaGameMainPanel;
-
+import View.Cartoon2000sTriviaGameScoreBoardPanel;
 
 /**
  * A GUI version of the Cartoon2000sTriviaGamePlayer class that connects to a
@@ -149,6 +149,8 @@ public class Cartoon2000sTriviaGamePlayerWindow extends JFrame {
                 doQuit();
             }
         });
+
+        // Creating a new thread for connecting to the server
         new Thread() {
             public void run() {
                 try {

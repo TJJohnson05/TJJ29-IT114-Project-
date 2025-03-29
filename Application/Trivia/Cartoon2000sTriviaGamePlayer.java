@@ -1,17 +1,20 @@
-// Tyler Johnson 
-// Feburary 22nd 2025
-// Tjj29@njit.edu 
+// Tyler Johnson
+// March 7th, 2025
+// Tjj29@njit.edu
 // IT114 - 004
-// Phase 1 Assignment: Server and Multi-Clients
+// Phase 2 Assignment: Trivia Game Flow
+
+package Trivia;
 
 import java.io.IOException;
 import java.util.Scanner;
 import java.io.ObjectInputStream;
 
+
 public class Cartoon2000sTriviaGamePlayer {
 
-    private static final int PORT = 37829; // Port number for the server.
-    private static volatile boolean connected = false; // Tracks connection status.
+    private static final int PORT = 37829; // Server port
+    private static volatile boolean connected = false;
     private static Cartoon2000sTriviaGameClient client;
     private static ObjectInputStream in;
     private static String host = "";
@@ -21,7 +24,7 @@ public class Cartoon2000sTriviaGamePlayer {
         Scanner scanner = new Scanner(System.in);
 
         if (args.length == 0) {
-            System.out.print("Enter the host name of the computer hosting the trivia game: ");
+            System.out.print("Enter the host name of the trivia game server: ");
             host = scanner.nextLine().trim();
         } else {
             host = args[0];
@@ -33,17 +36,26 @@ public class Cartoon2000sTriviaGamePlayer {
             return;
         }
 
-        // Try to establish a connection to the server.
+        // Try to connect to the server
+        connectToServer(scanner);
+
+        scanner.close();
+    }
+
+    /**
+     * Establishes a connection to the trivia game server.
+     */
+    private static void connectToServer(Scanner scanner) {
         try {
             System.out.println("Connecting to " + host + "...");
             client = new Cartoon2000sTriviaGameClient(host, playerID);
             connected = true;
-            System.out.println("Connected to the server. Type your messages below. Type 'quit' to exit or 'reconnect' to reconnect.");
+            System.out.println("Connected to the server. Type messages below. Type 'quit' to exit or 'reconnect' to reconnect.");
 
-            // Start a new thread to handle receiving messages
+            // Start a separate thread to receive messages from the server
             Thread receiveThread = new Thread(() -> {
                 while (connected) {
-                    client.receiveMessages(); // Make sure this method handles receiving messages from the server
+                    client.receiveMessages();
                 }
             });
             receiveThread.start();
@@ -53,55 +65,50 @@ public class Cartoon2000sTriviaGamePlayer {
                 String message = scanner.nextLine().trim();
 
                 if (message.equalsIgnoreCase("quit")) {
-                    doQuit(); // Disconnect and quit
+                    doQuit();
                     break;
                 }
 
                 if (message.equalsIgnoreCase("reconnect")) {
-                    reconnectToServer(); // Reconnect after quitting
+                    reconnectToServer();
                     break;
                 }
 
                 if (!message.isEmpty()) {
-                    client.send(message); // Send the message to the server
+                    client.send(message);
                 }
             }
 
         } catch (IOException e) {
             System.out.println("Failed to connect to the server: " + e.getMessage());
-            scanner.close();
-            return;
         }
-
-        scanner.close();
     }
 
     /**
-     * Handles clean disconnection from the server.
+     * Disconnects from the server gracefully.
      */
     private static void doQuit() {
         if (connected) {
             client.disconnect();
             try {
-                Thread.sleep(1000); // Time for DisconnectMessage to actually be sent
-            } catch (InterruptedException e) {}
+                Thread.sleep(1000); // Give time for disconnect message to be sent
+            } catch (InterruptedException ignored) {}
             connected = false;
             System.out.println("Disconnected from the server. Goodbye!");
         }
     }
 
     /**
-     * Reconnect to the server with the same player ID.
+     * Attempts to reconnect to the server using the same player ID.
      */
     private static void reconnectToServer() {
         try {
             System.out.print("Reconnecting to the server... ");
-            // Assuming you still have the previous `playerID` saved (you could prompt the user for it)
             client = new Cartoon2000sTriviaGameClient(host, playerID);
             connected = true;
             System.out.println("Reconnected to the server.");
         } catch (IOException e) {
-            System.out.println("Failed to reconnect to the server: " + e.getMessage());
+            System.out.println("Failed to reconnect: " + e.getMessage());
         }
     }
 
@@ -109,13 +116,12 @@ public class Cartoon2000sTriviaGamePlayer {
      * Inner class representing the trivia game client.
      */
     private static class Cartoon2000sTriviaGameClient extends Client {
-
-        private int playerID;
+        private final int playerID;
 
         /**
-         * Constructor to create a client connection to the specified host.
+         * Constructor for the client.
          *
-         * @param host The server's host name or IP address.
+         * @param host     The server's host name or IP address.
          * @param playerID The player's ID.
          * @throws IOException If the connection cannot be established.
          */
@@ -123,25 +129,25 @@ public class Cartoon2000sTriviaGamePlayer {
             super(host, PORT);
             this.playerID = playerID;
             System.out.println("Connected with player ID: " + playerID);
-            sendPlayerIDToServer(playerID);
+            sendPlayerIDToServer();
         }
 
         /**
-         * Send the player ID to the server for identification purposes.
+         * Sends the player ID to the server for tracking.
          */
-        private void sendPlayerIDToServer(int playerID) {
+        private void sendPlayerIDToServer() {
             send("RECONNECT " + playerID);
         }
 
         /**
-         * Called when a message is received from the server.
+         * Handles received messages from the server.
          *
          * @param message The received message.
          */
         @Override
         protected void messageReceived(Object message) {
             if (message instanceof String) {
-                System.out.println(message); // Print received string messages
+                System.out.println(message);
             } else if (message instanceof Cartoon2000sTriviaGameState) {
                 Cartoon2000sTriviaGameState state = (Cartoon2000sTriviaGameState) message;
                 System.out.println("Player " + state.getSenderID() + ": " + state.getMessage());
@@ -149,21 +155,21 @@ public class Cartoon2000sTriviaGamePlayer {
         }
 
         /**
-         * Called when the connection is closed due to an error.
+         * Handles errors that close the connection.
          *
-         * @param message Error message describing the reason for disconnection.
+         * @param message The error message.
          */
         @Override
         protected void connectionClosedByError(String message) {
             System.out.println("Connection closed due to error: " + message);
             connected = false;
-            System.exit(0); // Should end if server is shut down
+            System.exit(0);
         }
 
         /**
-         * Called when a new player connects to the server.
+         * Handles new player connections.
          *
-         * @param newPlayerID The ID of the newly connected player.
+         * @param newPlayerID The ID of the new player.
          */
         @Override
         protected void playerConnected(int newPlayerID) {
@@ -171,9 +177,9 @@ public class Cartoon2000sTriviaGamePlayer {
         }
 
         /**
-         * Called when a player disconnects from the server.
+         * Handles player disconnections.
          *
-         * @param departingPlayerID The ID of the player who disconnected.
+         * @param departingPlayerID The ID of the departing player.
          */
         @Override
         protected void playerDisconnected(int departingPlayerID) {
@@ -181,17 +187,13 @@ public class Cartoon2000sTriviaGamePlayer {
         }
 
         /**
-         * Receive messages from the server (running in a separate thread).
+         * Listens for incoming messages from the server.
          */
         public void receiveMessages() {
             try {
-                // Assuming you have an input stream `in` connected to the server
-                Object message = in.readObject(); // Read the message object from the server
-
-                // Handle the received message
+                Object message = in.readObject();
                 messageReceived(message);
             } catch (IOException | ClassNotFoundException e) {
-                // Log the error or handle it as necessary
                 System.out.println("Error receiving message: " + e.getMessage());
             }
         }
