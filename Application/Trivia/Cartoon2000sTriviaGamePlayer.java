@@ -4,7 +4,7 @@
 // IT114 - 004
 // Phase 2 Assignment: Trivia Game Flow
 
-package Trivia;
+
 
 import java.io.IOException;
 import java.util.Scanner;

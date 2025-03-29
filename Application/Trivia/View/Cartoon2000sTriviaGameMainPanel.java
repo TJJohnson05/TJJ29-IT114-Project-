@@ -15,6 +15,7 @@ import javax.swing.JTextField;
 
 
 
+
 public class Cartoon2000sTriviaGameMainPanel extends JPanel {
 
     private static final Color BLUE = Color.decode("#3b639e");
@@ -38,6 +39,7 @@ public class Cartoon2000sTriviaGameMainPanel extends JPanel {
         this.window = window;
         initialize();
     }
+
 
     private void initialize() {
         this.setBackground(Color.BLACK);

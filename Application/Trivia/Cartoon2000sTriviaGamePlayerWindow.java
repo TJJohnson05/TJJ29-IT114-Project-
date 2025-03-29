@@ -1,11 +1,11 @@
 
-
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+
 
 import View.Cartoon2000sTriviaGameMainPanel;
 import View.Cartoon2000sTriviaGameScoreBoardPanel;
